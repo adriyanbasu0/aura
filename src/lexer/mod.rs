@@ -23,6 +23,8 @@ pub struct Token {
 pub enum TokenKind {
     #[token("fn")]
     Fn,
+    #[token("let")]
+    Let,
     #[token("const")]
     Const,
     #[token("var")]
@@ -69,6 +71,12 @@ pub enum TokenKind {
     True,
     #[token("false")]
     False,
+    #[token("defer")]
+    Defer,
+    #[token("alloc")]
+    Alloc,
+    #[token("free")]
+    Free,
 
     #[regex("[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
@@ -210,6 +218,7 @@ impl fmt::Display for TokenKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TokenKind::Fn => write!(f, "fn"),
+            TokenKind::Let => write!(f, "let"),
             TokenKind::Const => write!(f, "const"),
             TokenKind::Var => write!(f, "var"),
             TokenKind::Syscall => write!(f, "syscall"),
@@ -233,6 +242,9 @@ impl fmt::Display for TokenKind {
             TokenKind::As => write!(f, "as"),
             TokenKind::True => write!(f, "true"),
             TokenKind::False => write!(f, "false"),
+            TokenKind::Defer => write!(f, "defer"),
+            TokenKind::Alloc => write!(f, "alloc"),
+            TokenKind::Free => write!(f, "free"),
             TokenKind::Identifier => write!(f, "identifier"),
             TokenKind::Integer => write!(f, "integer"),
             TokenKind::HexInteger => write!(f, "hex integer"),

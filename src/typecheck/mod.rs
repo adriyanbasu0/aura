@@ -198,6 +198,7 @@ impl TypeContext {
             Stmt::While(w) => self.typecheck_while_stmt(w),
             Stmt::For(f) => self.typecheck_for_stmt(f),
             Stmt::Asm(_) => Ok(()),
+            Stmt::Defer(d) => self.typecheck_stmt(d),
         }
     }
 
@@ -345,6 +346,14 @@ impl TypeContext {
                 } else {
                     Ok(Type::Void)
                 }
+            }
+            Expr::Alloc(ty, size) => {
+                self.typecheck_expr(size)?;
+                Ok(Type::MutPtr(Box::new((**ty).clone())))
+            }
+            Expr::Free(ptr) => {
+                self.typecheck_expr(ptr)?;
+                Ok(Type::Void)
             }
             Expr::If(if_expr) => self.typecheck_if_expr(if_expr),
             Expr::Syscall(_method_name, args) => {

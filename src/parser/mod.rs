@@ -647,6 +647,8 @@ impl<'a> Parser<'a> {
                 Ok(Stmt::Continue)
             }
             TokenKind::Asm => self.parse_asm_stmt(),
+            TokenKind::Defer => self.parse_defer_stmt(),
+            TokenKind::Let => self.parse_let_stmt(),
             TokenKind::Identifier => {
                 let lookahead = self.pos + 1;
                 if lookahead < self.tokens.len() && self.tokens[lookahead].kind == TokenKind::Colon
@@ -668,6 +670,10 @@ impl<'a> Parser<'a> {
 
     fn parse_let_stmt(&mut self) -> Result<Stmt, ParseError> {
         let is_const = match self.current_kind() {
+            TokenKind::Let => {
+                self.pos += 1;
+                false
+            }
             TokenKind::Const => {
                 self.pos += 1;
                 true
@@ -988,6 +994,12 @@ impl<'a> Parser<'a> {
         }))
     }
 
+    fn parse_defer_stmt(&mut self) -> Result<Stmt, ParseError> {
+        self.expect(TokenKind::Defer)?;
+        let stmt = Box::new(self.parse_stmt()?);
+        Ok(Stmt::Defer(stmt))
+    }
+
     fn parse_type(&mut self) -> Result<Type, ParseError> {
         match self.current_kind() {
             TokenKind::Void => {
@@ -1058,6 +1070,24 @@ impl<'a> Parser<'a> {
             }
             TokenKind::Identifier => {
                 let name = self.tokens[self.pos].text.clone();
+
+                if name.len() >= 2 && name.len() <= 4 {
+                    let first_char = name.chars().next().unwrap();
+                    let rest = &name[1..];
+
+                    if (first_char == 'u' || first_char == 'i')
+                        && rest.chars().all(|c| c.is_ascii_digit())
+                    {
+                        let width: u16 = rest.parse().unwrap_or(0);
+
+                        if width >= 1 && width <= 256 {
+                            let is_signed = first_char == 'i';
+                            self.pos += 1;
+                            return Ok(Type::BitInt(width as u8, is_signed));
+                        }
+                    }
+                }
+
                 self.pos += 1;
                 Ok(Type::Named(name))
             }
@@ -1559,6 +1589,23 @@ impl<'a> Parser<'a> {
             TokenKind::False => {
                 self.pos += 1;
                 Ok(Expr::Literal(Literal::Bool(false)))
+            }
+            TokenKind::Alloc => {
+                self.pos += 1;
+                self.expect(TokenKind::Lt)?;
+                let ty = Box::new(self.parse_type()?);
+                self.expect(TokenKind::Gt)?;
+                self.expect(TokenKind::LParen)?;
+                let size = Box::new(self.parse_expr()?);
+                self.expect(TokenKind::RParen)?;
+                Ok(Expr::Alloc(ty, size))
+            }
+            TokenKind::Free => {
+                self.pos += 1;
+                self.expect(TokenKind::LParen)?;
+                let ptr = Box::new(self.parse_expr()?);
+                self.expect(TokenKind::RParen)?;
+                Ok(Expr::Free(ptr))
             }
             TokenKind::Identifier => {
                 let name = self.tokens[self.pos].text.clone();

@@ -100,6 +100,7 @@ pub enum Stmt {
     While(WhileStmt),
     For(ForStmt),
     Asm(AsmStmt),
+    Defer(Box<Stmt>),
 }
 
 #[derive(Debug, Clone)]
@@ -172,6 +173,8 @@ pub enum Expr {
     Deref(Box<Expr>),
     Block(Vec<Stmt>, Option<Box<Expr>>),
     If(Box<IfExpr>),
+    Alloc(Box<Type>, Box<Expr>),
+    Free(Box<Expr>),
 }
 
 #[derive(Debug, Clone)]
@@ -259,6 +262,7 @@ pub enum Type {
     F64,
     Usize,
     Isize,
+    BitInt(u8, bool),
     Ptr(Box<Type>),
     MutPtr(Box<Type>),
     ConstPtr(Box<Type>),
@@ -277,6 +281,21 @@ impl Type {
             Type::I16 | Type::U16 => 2,
             Type::I32 | Type::U32 | Type::F32 => 4,
             Type::I64 | Type::U64 | Type::F64 | Type::Usize | Type::Isize => 8,
+            Type::BitInt(bits, _) => {
+                if *bits <= 8 {
+                    1
+                } else if *bits <= 16 {
+                    2
+                } else if *bits <= 32 {
+                    4
+                } else if *bits <= 64 {
+                    8
+                } else if *bits <= 128 {
+                    16
+                } else {
+                    (*bits as usize + 7) / 8
+                }
+            }
             Type::Ptr(_) | Type::MutPtr(_) | Type::ConstPtr(_) => 8,
             Type::Array(n, t) => *n * t.size(),
             Type::Func(_, _) => 8,
@@ -293,6 +312,21 @@ impl Type {
             Type::I16 | Type::U16 => 2,
             Type::I32 | Type::U32 | Type::F32 => 4,
             Type::I64 | Type::U64 | Type::F64 | Type::Usize | Type::Isize => 8,
+            Type::BitInt(bits, _) => {
+                if *bits <= 8 {
+                    1
+                } else if *bits <= 16 {
+                    2
+                } else if *bits <= 32 {
+                    4
+                } else if *bits <= 64 {
+                    8
+                } else if *bits <= 128 {
+                    8
+                } else {
+                    16
+                }
+            }
             Type::Ptr(_) | Type::MutPtr(_) | Type::ConstPtr(_) => 8,
             Type::Array(_, t) => t.align(),
             Type::Func(_, _) => 1,
@@ -314,6 +348,7 @@ impl Type {
                 | Type::U64
                 | Type::Usize
                 | Type::Isize
+                | Type::BitInt(_, _)
         )
     }
 
