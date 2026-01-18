@@ -34,6 +34,7 @@ pub enum FunctionAttribute {
     CCall,
     StdCall,
     Inline,
+    Entry(Option<String>),
 }
 
 #[derive(Debug, Clone)]

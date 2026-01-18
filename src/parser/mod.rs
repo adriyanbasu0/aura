@@ -78,6 +78,126 @@ impl<'a> Parser<'a> {
             TokenKind::Enum => self.parse_enum(),
             TokenKind::Const => self.parse_const_decl(),
             TokenKind::Var => self.parse_var_decl(),
+            TokenKind::At => {
+                self.pos += 1;
+                match self.current() {
+                    Some(Token {
+                        kind: TokenKind::Identifier,
+                        ..
+                    }) => {
+                        let attr_name = self.tokens[self.pos].text.clone();
+                        self.pos += 1;
+                        if attr_name == "entry" {
+                            self.expect(TokenKind::LParen)?;
+                            let entry_func_name = if self.current_kind() == TokenKind::Identifier {
+                                let name = self.tokens[self.pos].text.clone();
+                                self.pos += 1;
+                                Some(name)
+                            } else {
+                                None
+                            };
+                            self.expect(TokenKind::RParen)?;
+                            self.expect(TokenKind::Fn)?;
+                            let name = match self.current() {
+                                Some(Token {
+                                    kind: TokenKind::Identifier,
+                                    ..
+                                }) => {
+                                    let name = self.tokens[self.pos].clone();
+                                    self.pos += 1;
+                                    name.text.clone()
+                                }
+                                _ => {
+                                    return Err(ParseError {
+                                        message: "Expected function name".to_string(),
+                                        span: self
+                                            .current()
+                                            .map(|t| (t.span.start, t.span.end))
+                                            .unwrap_or((0, 0)),
+                                    });
+                                }
+                            };
+                            self.expect(TokenKind::LParen)?;
+                            let mut params = Vec::new();
+                            if self.current_kind() != TokenKind::RParen {
+                                loop {
+                                    let param_name = match self.current() {
+                                        Some(Token {
+                                            kind: TokenKind::Identifier,
+                                            ..
+                                        }) => {
+                                            let name = self.tokens[self.pos].clone();
+                                            self.pos += 1;
+                                            name.text.clone()
+                                        }
+                                        _ => {
+                                            return Err(ParseError {
+                                                message: "Expected parameter name".to_string(),
+                                                span: self
+                                                    .current()
+                                                    .map(|t| (t.span.start, t.span.end))
+                                                    .unwrap_or((0, 0)),
+                                            });
+                                        }
+                                    };
+                                    self.expect(TokenKind::Colon)?;
+                                    let param_type = self.parse_type()?;
+                                    params.push(Param {
+                                        name: param_name,
+                                        ty: Box::new(param_type),
+                                    });
+                                    if self.current_kind() == TokenKind::Comma {
+                                        self.pos += 1;
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                            self.expect(TokenKind::RParen)?;
+                            if self.current_kind() != TokenKind::Arrow {
+                                return Err(ParseError {
+                                    message: "Functions with @entry attribute must specify return type with ->".to_string(),
+                                    span: self
+                                        .current()
+                                        .map(|t| (t.span.start, t.span.end))
+                                        .unwrap_or((0, 0)),
+                                });
+                            }
+                            self.pos += 1;
+                            let return_type = self.parse_type()?;
+                            let attrs = vec![FunctionAttribute::Entry(entry_func_name)];
+                            self.expect(TokenKind::LBrace)?;
+                            let mut body = Vec::new();
+                            while self.current_kind() != TokenKind::RBrace {
+                                body.push(self.parse_stmt()?);
+                            }
+                            self.expect(TokenKind::RBrace)?;
+                            Ok(Item::Function(Function {
+                                name,
+                                params,
+                                return_type: Box::new(return_type),
+                                body,
+                                attrs,
+                            }))
+                        } else {
+                            Err(ParseError {
+                                message: format!("Unknown attribute: @{}", attr_name),
+                                span: self
+                                    .current()
+                                    .map(|t| (t.span.start, t.span.end))
+                                    .unwrap_or((0, 0)),
+                            })
+                        }
+                    }
+                    _ => Err(ParseError {
+                        message: "Expected attribute name".to_string(),
+                        span: self
+                            .current()
+                            .map(|t| (t.span.start, t.span.end))
+                            .unwrap_or((0, 0)),
+                    }),
+                }
+            }
             _ => Err(ParseError {
                 message: format!("Unexpected token in item: {:?}", self.current_kind()),
                 span: self
@@ -179,9 +299,53 @@ impl<'a> Parser<'a> {
 
     fn parse_function_attributes(&mut self) -> Result<Vec<FunctionAttribute>, ParseError> {
         let mut attrs = Vec::new();
-        while self.current_kind() == TokenKind::Noreturn {
-            attrs.push(FunctionAttribute::Noreturn);
-            self.pos += 1;
+        loop {
+            if self.current_kind() == TokenKind::Noreturn {
+                attrs.push(FunctionAttribute::Noreturn);
+                self.pos += 1;
+            } else if self.current_kind() == TokenKind::At {
+                self.pos += 1;
+                match self.current() {
+                    Some(Token {
+                        kind: TokenKind::Identifier,
+                        ..
+                    }) => {
+                        let attr_name = self.tokens[self.pos].text.clone();
+                        self.pos += 1;
+                        if attr_name == "entry" {
+                            self.expect(TokenKind::LParen)?;
+                            let entry_func_name = if self.current_kind() == TokenKind::Identifier {
+                                let name = self.tokens[self.pos].text.clone();
+                                self.pos += 1;
+                                Some(name)
+                            } else {
+                                None
+                            };
+                            self.expect(TokenKind::RParen)?;
+                            attrs.push(FunctionAttribute::Entry(entry_func_name));
+                        } else {
+                            return Err(ParseError {
+                                message: format!("Unknown attribute: @{}", attr_name),
+                                span: self
+                                    .current()
+                                    .map(|t| (t.span.start, t.span.end))
+                                    .unwrap_or((0, 0)),
+                            });
+                        }
+                    }
+                    _ => {
+                        return Err(ParseError {
+                            message: "Expected attribute name".to_string(),
+                            span: self
+                                .current()
+                                .map(|t| (t.span.start, t.span.end))
+                                .unwrap_or((0, 0)),
+                        });
+                    }
+                }
+            } else {
+                break;
+            }
         }
         Ok(attrs)
     }

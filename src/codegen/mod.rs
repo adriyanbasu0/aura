@@ -59,6 +59,35 @@ pub fn generate(typed_ast: &Program) -> Result<AuraObject, CodegenError> {
     let mut codegen = CodeGenerator::new();
 
     for item in &typed_ast.items {
+        if let Item::Function(f) = item {
+            for attr in &f.attrs {
+                if let FunctionAttribute::Entry(Some(entry_name)) = attr {
+                    codegen.entry_point_name = Some(entry_name.clone());
+                } else if let FunctionAttribute::Entry(None) = attr {
+                    codegen.entry_point_name = Some(f.name.clone());
+                }
+            }
+        }
+    }
+
+    if let Some(ref entry_name) = codegen.entry_point_name {
+        let mut function_exists = false;
+        for item in &typed_ast.items {
+            if let Item::Function(f) = item {
+                if f.name == *entry_name {
+                    function_exists = true;
+                    break;
+                }
+            }
+        }
+        if !function_exists {
+            return Err(CodegenError {
+                message: format!("Entry point function '{}' does not exist", entry_name),
+            });
+        }
+    }
+
+    for item in &typed_ast.items {
         codegen.generate_item(item)?;
     }
 
@@ -81,6 +110,7 @@ struct CodeGenerator {
     entry_point: u64,
     current_offset: usize,
     label_positions: HashMap<String, usize>,
+    entry_point_name: Option<String>,
 }
 
 type HashMap<K, V> = std::collections::HashMap<K, V>;
@@ -96,6 +126,7 @@ impl CodeGenerator {
             entry_point: 0,
             current_offset: 0,
             label_positions: HashMap::new(),
+            entry_point_name: None,
         }
     }
 
@@ -156,8 +187,10 @@ impl CodeGenerator {
             kind: SymbolKind::Function,
         });
 
-        if f.name == "main" {
-            self.entry_point = func_start as u64;
+        if let Some(entry_name) = &self.entry_point_name {
+            if f.name == *entry_name {
+                self.entry_point = func_start as u64;
+            }
         }
 
         for stmt in &f.body {
@@ -673,4 +706,3 @@ impl AuraBinaryHeader {
         }
     }
 }
-

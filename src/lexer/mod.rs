@@ -154,6 +154,8 @@ pub enum TokenKind {
     Dot,
     #[token("->")]
     Arrow,
+    #[token("@")]
+    At,
     #[token("?")]
     Question,
     #[token(":")]
@@ -271,6 +273,7 @@ impl fmt::Display for TokenKind {
             TokenKind::LBracket => write!(f, "["),
             TokenKind::RBracket => write!(f, "]"),
             TokenKind::Dot => write!(f, "."),
+            TokenKind::At => write!(f, "@"),
             TokenKind::Arrow => write!(f, "->"),
             TokenKind::Question => write!(f, "?"),
             TokenKind::Colon => write!(f, ":"),
