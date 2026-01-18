@@ -1,0 +1,8 @@
+const msg1 = "Hello, ";
+const msg2 = "World!\n";
+
+fn main() i32 {
+    syscall.write(msg1);
+    syscall.write(msg2);
+    return 0;
+}
