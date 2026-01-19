@@ -1602,8 +1602,10 @@ impl<'a> Parser<'a> {
                 self.pos += 1;
                 self.expect(TokenKind::LParen)?;
                 let ptr = Box::new(self.parse_expr()?);
+                self.expect(TokenKind::Comma)?;
+                let size = Box::new(self.parse_expr()?);
                 self.expect(TokenKind::RParen)?;
-                Ok(Expr::Free(ptr))
+                Ok(Expr::Free(ptr, size))
             }
             TokenKind::Identifier => {
                 let name = self.tokens[self.pos].text.clone();

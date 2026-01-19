@@ -351,8 +351,9 @@ impl TypeContext {
                 self.typecheck_expr(size)?;
                 Ok(Type::MutPtr(Box::new((**ty).clone())))
             }
-            Expr::Free(ptr) => {
+            Expr::Free(ptr, size) => {
                 self.typecheck_expr(ptr)?;
+                self.typecheck_expr(size)?;
                 Ok(Type::Void)
             }
             Expr::If(if_expr) => self.typecheck_if_expr(if_expr),

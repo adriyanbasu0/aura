@@ -6,3 +6,5 @@ fn main() i32 {
     syscall.write(msg2);
     return 0;
 }
+
+// dous not work

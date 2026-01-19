@@ -8,6 +8,8 @@
 # Arguments:
 #   rdi = entry point address
 #   rsi = stack pointer
+#   rdx = alloc function pointer
+#   rcx = free function pointer
 #
 # This trampoline:
 # 1. Switches to the new stack
@@ -20,13 +22,17 @@ trampoline:
     # Save entry point in r12 (callee-saved)
     mov r12, rdi
 
+    # Save alloc/free ptrs in r14/r15 (callee-saved)
+    mov r14, rdx
+    mov r15, rcx
+
     # Set up new stack
     mov rsp, rsi
 
     # System V AMD64 ABI requires stack to be 16-byte aligned
     and rsp, -16
 
-    # Clear registers (except r12 which has entry point)
+    # Clear registers (except r10, r12, r14, r15 which have entry point, alloc, free, and var access)
     xor eax, eax        # Return value register
     xor ebx, ebx
     xor ecx, ecx
@@ -36,11 +42,8 @@ trampoline:
     xor ebp, ebp
     xor r8, r8
     xor r9, r9
-    xor r10, r10
     xor r11, r11
     xor r13, r13
-    xor r14, r14
-    xor r15, r15
 
     # Clear RFLAGS (except fixed bits)
     pushfq

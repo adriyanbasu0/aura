@@ -174,7 +174,7 @@ pub enum Expr {
     Block(Vec<Stmt>, Option<Box<Expr>>),
     If(Box<IfExpr>),
     Alloc(Box<Type>, Box<Expr>),
-    Free(Box<Expr>),
+    Free(Box<Expr>, Box<Expr>),
 }
 
 #[derive(Debug, Clone)]

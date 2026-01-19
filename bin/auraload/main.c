@@ -25,7 +25,19 @@ typedef struct {
     uint64_t symbol_count;
 } AuraHeader;
 
-extern void trampoline(void *entry, void *stack);
+extern void trampoline(void *entry, void *stack, void* alloc_ptr, void* free_ptr);
+
+void* trampoline_alloc(size_t size) {
+    void* ptr = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    if (ptr == MAP_FAILED) {
+        return NULL;
+    }
+    return ptr;
+}
+
+void trampoline_free(void* ptr, size_t size) {
+    munmap(ptr, size);
+}
 
 static void *align_up(void *ptr, size_t alignment) {
     uintptr_t addr = (uintptr_t)ptr;
@@ -136,12 +148,12 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    void *aligned_stack = align_up(stack_addr + header.stack_size, 16);
+    void *aligned_stack = (void *)((uintptr_t)align_up(stack_addr, 16) + header.stack_size - 8);
 
     close(fd);
 
     void *entry_point = (void *)((uintptr_t)aligned_text + header.entry_point);
-    trampoline(entry_point, aligned_stack);
+    trampoline(entry_point, aligned_stack, &trampoline_alloc, &trampoline_free);
 
     return 0;
 }

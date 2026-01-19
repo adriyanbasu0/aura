@@ -5,6 +5,7 @@ A low-level systems programming language combining the philosophy of Zig, Carbon
 ## Philosophy
 
 Aura is designed for:
+
 - **OS Kernels** - Full control over memory and execution
 - **Bootloaders** - No runtime dependencies
 - **Bare-metal programming** - Predictable behavior
@@ -84,14 +85,15 @@ cargo run --release -- dump tests/hello.aura
 
 ### Types
 
-| Type | Size | Description |
-|------|------|-------------|
-| `i8`, `i16`, `i32`, `i64` | 1/2/4/8 | Signed integers |
-| `u8`, `u16`, `u32`, `u64` | 1/2/4/8 | Unsigned integers |
-| `f32`, `f64` | 4/8 | Floating point |
-| `bool` | 1 | Boolean |
-| `*T` | 8 | Pointer |
-| `[N]T` | N*sizeof(T) | Fixed array |
+
+| Type                      | Size        | Description       |
+| ------------------------- | ----------- | ----------------- |
+| `i8`, `i16`, `i32`, `i64` | 1/2/4/8     | Signed integers   |
+| `u8`, `u16`, `u32`, `u64` | 1/2/4/8     | Unsigned integers |
+| `f32`, `f64`              | 4/8         | Floating point    |
+| `bool`                    | 1           | Boolean           |
+| `*T`                      | 8           | Pointer           |
+| `[N]T`                    | N*sizeof(T) | Fixed array       |
 
 ### Functions
 
@@ -165,13 +167,13 @@ N       M     Data Section (initialized data)
 │   ├── ast/             # AST definitions
 │   ├── typecheck/       # Type checking
 │   └── codegen/         # Code generation
-├── bin/
-│   ├── aura_build/      # Zig binary builder
+├── bin/      # Zig binary builder
 │   └── auraload/        # C runtime loader
 ├── lib/
 │   └── trampoline/      # Assembly trampoline
 └── tests/
     └── hello.aura       # Example program
+
 ```
 
 ## Non-Goals (Explicitly Forbidden)
@@ -187,11 +189,11 @@ N       M     Data Section (initialized data)
 
 ## Long-Term Vision
 
-- [ ] Self-hosting compiler
-- [ ] Cross-architecture backends (RISC-V, ARM64)
-- [ ] WebAssembly target
-- [ ] Kernel-mode Aura
-- [ ] Formal verification
+- [ ]  Self-hosting compiler
+- [ ]  Cross-architecture backends (RISC-V, ARM64)
+- [ ]  WebAssembly target
+- [ ]  Kernel-mode Aura
+- [ ]  Formal verification
 
 ## License
 

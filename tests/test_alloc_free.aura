@@ -1,8 +1,8 @@
 @entry()
 fn main() -> i32 {
-     const buffer: *u8 = alloc<u8>(1024);
+    let buffer: *u8 = alloc<u8>(1024);
     syscall.write("Allocated!\n");
-    free(buffer);
+    free(buffer, 1024);
     syscall.write("Freed!\n");
     return 0;
 }
