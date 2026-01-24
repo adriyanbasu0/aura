@@ -288,10 +288,11 @@ pub fn main() !void {
         }
     }
 
+    const data_base_addr: usize = 0x600000000000;
     var data_addr: ?[]align(4096) u8 = null;
     if (header.data_size > 0) {
-        data_addr = posix.mmap(null, header.data_size + page_size, posix.PROT.READ | posix.PROT.WRITE, .{ .TYPE = .PRIVATE, .ANONYMOUS = true }, -1, 0) catch {
-            std.debug.print("Error: Cannot map data section\n", .{});
+        data_addr = posix.mmap(@as([*]align(4096) u8, @ptrFromInt(data_base_addr)), header.data_size + page_size, posix.PROT.READ | posix.PROT.WRITE, .{ .TYPE = .PRIVATE, .ANONYMOUS = true, .FIXED = true }, -1, 0) catch {
+            std.debug.print("Error: Cannot map data at fixed address 0x{x}\n", .{data_base_addr});
             posix.munmap(code_slice);
             return error.MmapFailed;
         };

@@ -883,8 +883,8 @@ impl CodeGenerator {
 
     fn get_data_address(&self, offset: usize) -> u64 {
         // For now, assume a fixed data address.
-        // This will need to be updated with the actual data segment address.
-        let addr = 0x1000000 + offset as u64;
+        // This will need to be updated with actual data segment address.
+        let addr = 0x600000000000 + offset as u64;
         addr
     }
 
